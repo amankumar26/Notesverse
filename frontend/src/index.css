@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-lg;
+  }
+
+  .glass-dark {
+    @apply bg-[#111827]/60 backdrop-blur-xl border border-white/10 shadow-xl;
+  }
+
+  .glass-panel {
+    @apply bg-[#1F2937]/70 backdrop-blur-lg border border-gray-700/50;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+body {
+  @apply bg-[#0f172a] text-white;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-600/50 rounded-full hover:bg-gray-500/50 transition-colors;
+}
+
+/* Driver.js Glassmorphism Theme */
+/* Driver.js Glassmorphism Theme */
+.driver-popover {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  padding: 1.5rem !important;
+}
+
+.driver-popover .driver-popover-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  background: linear-gradient(to right, #60a5fa, #a855f7) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.driver-popover .driver-popover-description {
+  color: #d1d5db !important;
+  font-size: 0.875rem !important;
+  line-height: 1.625 !important;
+}
+
+.driver-popover button {
+  border-radius: 0.5rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
+  text-shadow: none !important;
+}
+
+.driver-popover .driver-popover-next-btn {
+  background: linear-gradient(to right, #2563eb, #9333ea) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.5rem 1rem !important;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
+}
+
+.driver-popover .driver-popover-next-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3) !important;
+}
+
+.driver-popover .driver-popover-prev-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #d1d5db !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.driver-popover .driver-popover-prev-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+.driver-popover .driver-popover-close-btn {
+  color: #9ca3af !important;
+}
+
+.driver-popover .driver-popover-close-btn:hover {
+  color: white !important;
+}
+
+/* Arrows */
+.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: rgba(30, 41, 59, 0.9) !important;
+}
