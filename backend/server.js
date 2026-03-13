@@ -19,11 +19,18 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      callback(null, true);
+      const allowedOrigins = [
+        "http://localhost:5173",
+        /\.vercel\.app$/,
+        /\.onrender\.com$/
+      ];
+      if (!origin || allowedOrigins.some(ao => (typeof ao === 'string' ? ao === origin : ao.test(origin)))) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
     },
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST"],
     credentials: true,
   },
 });
@@ -33,11 +40,20 @@ const PORT = process.env.PORT || 5000;
 //Configure Middleware
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    callback(null, true);
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "http://localhost:5000",
+      /\.vercel\.app$/,
+      /\.onrender\.com$/
+    ];
+    if (!origin || allowedOrigins.some(ao => (typeof ao === 'string' ? ao === origin : ao.test(origin)))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   credentials: true,
-})); // Allows cross-origin requests (from our frontend)
+}));
 app.use(express.json()); // Allows the server to accept JSON in request bodies
 app.use("/api/notes", noteRoutes);
 // Configure Cloudinary
@@ -90,16 +106,16 @@ if (!process.env.MONGO_URI) {
     })
     .catch((error) => {
       console.error("❌ MongoDB connection failed:", error.message);
-      console.log("Tip: Check if your IP is whitelisted in MongoDB Atlas or if your network blocks port 27017.");
-      // We don't necessarily want to kill the whole server if we want independent 'services',
-      // but without a DB, most of this monolith won't work.
-      // process.exit(1); 
     });
 }
 
-// Start Server independently of DB status to allow 'service-up' checks
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📡 Service: Backend Gateway (Microservice Ready)`);
-});
+// Start Server locally
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    console.log(`📡 Service: Backend Gateway (Microservice Ready)`);
+  });
+}
+
+export default app;
 
