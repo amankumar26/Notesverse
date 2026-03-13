@@ -29,8 +29,34 @@ const userSchema = new mongoose.Schema({
         default: "",
     },
     gradYear: {
+        type: String,
+        default: "",
+    },
+    bio: {
+        type: String,
+        default: "",
+    },
+    isProfileComplete: {
         type: Boolean,
         default: false,
+    },
+    hasSeenTour: {
+        type: Boolean,
+        default: false,
+    },
+    upiId: {
+        type: String,
+        default: "",
+    },
+    bankDetails: {
+        accountNumber: { type: String, default: "" },
+        ifscCode: { type: String, default: "" },
+        accountHolderName: { type: String, default: "" },
+        bankName: { type: String, default: "" },
+    },
+    profileViews: {
+        type: Number,
+        default: 0,
     },
 }, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
 

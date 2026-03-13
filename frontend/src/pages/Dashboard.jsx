@@ -14,13 +14,40 @@ import "driver.js/dist/driver.css";
 const Dashboard = () => {
   const { authUser, token, updateUser } = useAuth();
 
-  // Mock Data for now - in a real app, fetch this from backend
-  const mockStats = {
-    totalEarnings: "₹10,500",
-    notesUploaded: "5",
-    notesPurchased: "12",
-    profileViews: "450"
-  };
+  const [stats, setStats] = useState({
+    totalEarnings: "0",
+    notesUploaded: "0",
+    notesPurchased: "0",
+    profileViews: "0"
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/get-stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setStats({
+            totalEarnings: `₹${data.totalEarnings.toLocaleString()}`,
+            notesUploaded: data.notesUploaded.toString(),
+            notesPurchased: data.notesPurchased.toString(),
+            profileViews: data.profileViews.toString()
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard stats", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    if (token) fetchStats();
+  }, [token]);
 
   const [activities, setActivities] = useState([
     { id: 1, type: 'purchase', message: 'You purchased "Quantum Physics Notes"', time: '2 hours ago', emoji: '💰' },
@@ -133,13 +160,6 @@ const Dashboard = () => {
               // Update context and local storage
               if (updateUser) {
                 updateUser({ hasSeenTour: true });
-              } else {
-                // Fallback if updateUser not available yet
-                const storedUser = JSON.parse(localStorage.getItem("noteverse_user"));
-                if (storedUser) {
-                  storedUser.hasSeenTour = true;
-                  localStorage.setItem("noteverse_user", JSON.stringify(storedUser));
-                }
               }
             } catch (err) {
               console.error("Failed to update tour status", err);
@@ -190,7 +210,7 @@ const Dashboard = () => {
 
         {/* Stats Overview */}
         <div id="stats-overview" className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <StatsOverview stats={mockStats} />
+          <StatsOverview stats={stats} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">

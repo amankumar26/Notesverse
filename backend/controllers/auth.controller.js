@@ -3,6 +3,8 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"; // Import jsonwebtoken
 import { encrypt, decrypt } from "../utils/encryption.js";
+import Note from "../models/note.model.js";
+import Order from "../models/order.model.js";
 
 // --- SIGN UP a new user ---
 export const signup = async (req, res) => {
@@ -186,7 +188,14 @@ export const updateProfile = async (req, res) => {
 export const getUserProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select("fullName profilePicture college bio major gradYear");
+    const viewerId = req.user._id;
+
+    // Increment view count if someone else is viewing the profile
+    if (id !== viewerId.toString()) {
+      await User.findByIdAndUpdate(id, { $inc: { profileViews: 1 } });
+    }
+
+    const user = await User.findById(id).select("fullName profilePicture college bio major gradYear profileViews");
 
     if (!user) {
       return res.status(404).json({ error: "User not found." });
@@ -225,6 +234,37 @@ export const removeProfilePicture = async (req, res) => {
     res.status(200).json(userResponse);
   } catch (error) {
     console.error("Error in removeProfilePicture controller:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// --- GET DASHBOARD STATS ---
+export const getStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // 1. Total Notes Uploaded
+    const totalUploads = await Note.countDocuments({ seller: userId });
+
+    // 2. Total Earnings (Sum of completed orders where user is seller)
+    const completedSales = await Order.find({ seller: userId, status: "completed" });
+    const totalEarnings = completedSales.reduce((sum, order) => sum + order.amount, 0);
+
+    // 3. Notes Purchased (Count of completed orders where user is buyer)
+    const notesPurchased = await Order.countDocuments({ buyer: userId, status: "completed" });
+
+    // 4. Profile Views (From User model)
+    const user = await User.findById(userId);
+    const profileViews = user.profileViews || 0;
+
+    res.status(200).json({
+      totalEarnings,
+      notesUploaded: totalUploads, // Changed to match frontend key
+      notesPurchased,
+      profileViews
+    });
+  } catch (error) {
+    console.error("Error in getStats controller:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

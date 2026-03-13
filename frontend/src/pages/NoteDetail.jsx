@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Sidebar from "../components/dashboard/Sidebar";
 import PaymentModal from "../components/common/PaymentModal";
+import { useAuth } from "../context/AuthContext";
+import { Download } from "lucide-react";
 
 const NoteDetail = () => {
+  const { token } = useAuth();
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +21,11 @@ const NoteDetail = () => {
     const fetchNote = async () => {
       try {
         const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/notes/${id}`;
-        const res = await fetch(apiUrl);
+        const res = await fetch(apiUrl, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || "Failed to fetch note data");
@@ -41,7 +48,7 @@ const NoteDetail = () => {
       }
     };
     fetchNote();
-  }, [id]);
+  }, [id, token]);
 
   const currencySymbols = {
     USD: "$",
@@ -111,30 +118,43 @@ const NoteDetail = () => {
               {symbol}{note?.price?.toFixed(2)}
             </span>
             <div className="flex w-full sm:w-auto gap-4">
-              <button
-                onClick={handleBargain}
-                className="flex-1 sm:flex-none bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg"
-              >
-                Bargain
-              </button>
-              <button
-                onClick={() => setIsPaymentModalOpen(true)}
-                className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
-              >
-                Buy Now
-              </button>
+              {!note?.isPurchased && (
+                <button
+                  onClick={handleBargain}
+                  className="flex-1 sm:flex-none bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                >
+                  Bargain
+                </button>
+              )}
+              {note?.isPurchased ? (
+                <a
+                  href={note.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded-lg shadow-lg shadow-green-600/20 transition-all"
+                >
+                  <Download size={20} />
+                  Download Note
+                </a>
+              ) : (
+                <button
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg shadow-lg shadow-blue-600/20 transition-all"
+                >
+                  Buy Now
+                </button>
+              )}
             </div>
           </div>
 
-          {isPaymentModalOpen && (
-            <PaymentModal
-              noteId={note._id}
-              noteTitle={note.title}
-              price={note.price}
-              currency={note.currency}
-              onClose={() => setIsPaymentModalOpen(false)}
-            />
-          )}
+          <PaymentModal
+            isOpen={isPaymentModalOpen}
+            noteId={note._id}
+            noteTitle={note.title}
+            price={note.price}
+            currency={note.currency}
+            onClose={() => setIsPaymentModalOpen(false)}
+          />
 
           {/* More from this user section */}
           {sellerNotes.length > 0 && (

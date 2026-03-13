@@ -12,6 +12,7 @@ import {
   deleteNote,
   getNotesBySeller,
   getNotePaymentDetails,
+  getPurchasedNotes,
 } from "../controllers/note.controller.js";
 import { protectRoute } from "../middleware/protectRoute.js";
 
@@ -28,6 +29,7 @@ const upload = multer({
 
 // The route definition remains the same, but the 'upload' object is now different.
 router.get("/my-notes", protectRoute, getMyNotes);
+router.get("/purchased", protectRoute, getPurchasedNotes);
 router.get("/search", searchNotes);
 router.get("/seller/:sellerId", getNotesBySeller);
 router.post("/upload", protectRoute, upload.single("noteFile"), uploadNote);

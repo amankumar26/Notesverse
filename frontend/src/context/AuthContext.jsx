@@ -40,10 +40,17 @@ export const AuthProvider = ({ children }) => {
 
   // Function to handle user logout
   const logout = () => {
+    // 1. Clear State
     setAuthUser(null);
     setToken(null);
+    
+    // 2. Clear Storage
     localStorage.removeItem("noteverse_user");
     localStorage.removeItem("noteverse_token");
+    
+    // 3. Force a full page reload to clear all in-memory cache and socket connections
+    // This is the most reliable way to prevent "ghost" data from previous sessions
+    window.location.href = "/signin";
   };
 
   // Function to update user data without full re-login

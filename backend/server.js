@@ -6,6 +6,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.route.js";
 import noteRoutes from "./routes/note.route.js";
 import chatRoutes from "./routes/chat.route.js";
+import paymentRoutes from "./routes/payment.route.js";
 import http from "http";
 import { Server } from "socket.io";
 
@@ -49,14 +50,17 @@ console.log("Cloudinary configured...");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/payments", paymentRoutes);
 
 io.on("connection", (socket) => {
-  // console.log(`User Connected: ${socket.id}`);
+  // console.log(`New Connection: ${socket.id}`);
 
   // Join a room based on user ID to allow private messaging
   socket.on("join_room", ({ userId, userName }) => {
+    socket.userId = userId;
+    socket.userName = userName;
     socket.join(userId);
-    console.log(`User: ${userName} (${userId}) joined their personal room`);
+    console.log(`User Identified: ${userName} (ID: ${userId})`);
   });
 
   socket.on("send_message", (data) => {
@@ -66,22 +70,36 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("User Disconnected", socket.id);
+    const userIdentifier = socket.userName ? `${socket.userName} (ID: ${socket.userId})` : `Unknown User (${socket.id})`;
+    console.log(`User Disconnected: ${userIdentifier}`);
   });
 });
 
 
-//Connect to MongoDB and Start Server
-console.log("Connecting to MongoDB...");
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully.");
-    server.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
+// Connect to MongoDB
+console.log("Initializing database connection...");
+if (!process.env.MONGO_URI) {
+  console.error("CRITICAL ERROR: MONGO_URI is not defined in .env file.");
+} else {
+  mongoose
+    .connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
+    })
+    .then(() => {
+      console.log("✅ MongoDB connected successfully.");
+    })
+    .catch((error) => {
+      console.error("❌ MongoDB connection failed:", error.message);
+      console.log("Tip: Check if your IP is whitelisted in MongoDB Atlas or if your network blocks port 27017.");
+      // We don't necessarily want to kill the whole server if we want independent 'services',
+      // but without a DB, most of this monolith won't work.
+      // process.exit(1); 
     });
-  })
-  .catch((error) => {
-    console.error("MongoDB connection failed:", error.message);
-    process.exit(1);
-  });
+}
+
+// Start Server independently of DB status to allow 'service-up' checks
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`📡 Service: Backend Gateway (Microservice Ready)`);
+});
+

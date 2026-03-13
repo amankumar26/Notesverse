@@ -107,14 +107,65 @@ const Conversation = ({ selectedContact, socket, onBack, referencedNote, clearRe
     };
 
     if (selectedContact) {
-      fetchMessages();
-      // Reset selection mode when contact changes
-      setIsSelectionMode(false);
-      setSelectedMessageIds([]);
-      setReplyingTo(null);
-      setCurrentMessage(""); // Clear input field
+      if (selectedContact.isDummy) {
+        setMessageList([
+          {
+            id: "dummy_msg_1",
+            text: "Hi there! Welcome to Notesverse. How can I assist you with your notes today?",
+            sender: "them",
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
+            senderId: selectedContact.id,
+            recipientId: authUser._id,
+            senderProfilePicture: selectedContact.avatar,
+            messageType: "text",
+          }
+        ]);
+        setIsSelectionMode(false);
+        setSelectedMessageIds([]);
+        setReplyingTo(null);
+        setCurrentMessage("");
+      } else {
+        fetchMessages();
+        // Reset selection mode when contact changes
+        setIsSelectionMode(false);
+        setSelectedMessageIds([]);
+        setReplyingTo(null);
+        setCurrentMessage(""); // Clear input field
+      }
     }
   }, [selectedContact, authUser, token]);
+
+  // Handle dummy auto-replies
+  useEffect(() => {
+    if (selectedContact?.isDummy) {
+      const lastMessage = messageList[messageList.length - 1];
+      if (lastMessage && lastMessage.sender === "me") {
+        const timer = setTimeout(() => {
+          const dummyReplies = [
+            "That sounds interesting! Tell me more.",
+            "I'm here to help you with any questions about notes.",
+            "Notesverse is the best place to share and find study materials!",
+            "Have you checked out the recommended notes section lately?",
+            "I'll look into that for you. Anything else?"
+          ];
+          const randomReply = dummyReplies[Math.floor(Math.random() * dummyReplies.length)];
+          
+          const incomingMessage = {
+            id: Date.now(),
+            text: randomReply,
+            sender: "them",
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
+            senderId: selectedContact.id,
+            recipientId: authUser._id,
+            senderProfilePicture: selectedContact.avatar,
+            messageType: "text",
+          };
+          setMessageList((prev) => [...prev, incomingMessage]);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [messageList, selectedContact, authUser]);
 
   // Listen for incoming messages
   useEffect(() => {
@@ -150,6 +201,32 @@ const Conversation = ({ selectedContact, socket, onBack, referencedNote, clearRe
 
   const sendMessage = async (type = "text", customPayload = {}, textOverride = null) => {
     if ((currentMessage !== "" || type === "offer" || textOverride) && selectedContact && authUser) {
+      const newMessage = {
+        id: Date.now().toString(),
+        text: textOverride || (type === "text" ? currentMessage : ""),
+        sender: "me",
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        senderId: authUser._id,
+        senderName: authUser.fullName,
+        senderProfilePicture: authUser.profilePicture,
+        recipientId: selectedContact.id,
+        referencedNote: customPayload.referencedNote || referencedNote,
+        messageType: type,
+        replyTo: replyingTo ? replyingTo : null,
+      };
+
+      if (selectedContact.isDummy) {
+        setMessageList((list) => [...list, newMessage]);
+        if (type === "text") setCurrentMessage("");
+        setReplyingTo(null);
+        if (clearReferencedNote && type === "text") clearReferencedNote();
+        return;
+      }
+
       try {
         const payload = {
           recipientId: selectedContact.id,
@@ -171,34 +248,26 @@ const Conversation = ({ selectedContact, socket, onBack, referencedNote, clearRe
         const data = await res.json();
 
         if (res.ok) {
-          const newMessage = {
+          const sentMessage = {
+            ...newMessage,
             id: data._id,
-            text: data.text,
-            sender: "me",
             time: new Date(data.createdAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
               hour12: true,
             }),
-            senderId: authUser._id,
-            senderName: authUser.fullName,
-            senderProfilePicture: authUser.profilePicture,
-            recipientId: selectedContact.id,
-            referencedNote: data.referencedNote,
-            messageType: data.messageType,
-            replyTo: data.replyTo,
           };
 
-          setMessageList((list) => [...list, newMessage]);
+          setMessageList((list) => [...list, sentMessage]);
           if (type === "text") setCurrentMessage("");
           setReplyingTo(null);
           if (clearReferencedNote && type === "text") clearReferencedNote();
 
           // Emit socket event for real-time updates
-          socket.emit("send_message", newMessage);
+          socket.emit("send_message", sentMessage);
 
           if (onMessageSent) {
-            onMessageSent(newMessage);
+            onMessageSent(sentMessage);
           }
         }
       } catch (err) {

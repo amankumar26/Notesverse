@@ -13,6 +13,7 @@ import Settings from "./pages/Settings";
 import UploadNote from "./pages/UploadNote";
 import NoteDetail from "./pages/NoteDetail";
 import MyNotes from "./pages/MyNotes";
+import MyPurchases from "./pages/MyPurchases";
 import UserProfile from "./pages/UserProfile";
 
 // Import the ProtectedRoute component
@@ -91,6 +92,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MyNotes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/purchases"
+            element={
+              <ProtectedRoute>
+                <MyPurchases />
               </ProtectedRoute>
             }
           />

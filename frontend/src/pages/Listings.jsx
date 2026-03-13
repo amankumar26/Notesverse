@@ -10,24 +10,55 @@ const Listings = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState(""); // State for the search term
 
+  const dummyNotes = [
+    {
+      _id: 'dummy1',
+      title: 'Advanced Machine Learning Notes',
+      seller: { fullName: 'Dr. Sarah Chen', _id: 'seller1', profilePicture: null },
+      price: 25.0,
+      subject: 'Computer Science',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=800&auto=format&fit=crop&q=60',
+      currency: 'USD',
+    },
+    {
+      _id: 'dummy2',
+      title: 'Modern Architectural Principles',
+      seller: { fullName: 'Marco Rossi', _id: 'seller2', profilePicture: null },
+      price: 15.0,
+      subject: 'Architecture',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=60',
+      currency: 'USD',
+    },
+    {
+      _id: 'dummy3',
+      title: 'Organic Chemistry II - Full Semester',
+      seller: { fullName: 'Emily Stone', _id: 'seller3', profilePicture: null },
+      price: 12.5,
+      subject: 'Chemistry',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1532187863486-abf9d34345cd?w=800&auto=format&fit=crop&q=60',
+      currency: 'USD',
+    },
+    {
+      _id: 'dummy4',
+      title: 'Macroeconomics 101: Key Concepts',
+      seller: { fullName: 'John Doe', _id: 'seller4', profilePicture: null },
+      price: 10.0,
+      subject: 'Economics',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1518186239767-3467f8142540?w=800&auto=format&fit=crop&q=60',
+      currency: 'USD',
+    },
+  ];
+
   // Function to fetch notes, now accepts an optional query
   const fetchNotes = async (query = "") => {
     try {
       setLoading(true);
       setError(null);
-      //extras
-      // Determine which URL to use based on the search query
+      
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       const url = query
         ? `${baseUrl}/api/notes/search?q=${query}`
         : `${baseUrl}/api/notes/`;
-
-      console.log(`Fetching notes from: ${url}`);
-      //extras
-
-      // const url = query
-      //   ? `http://localhost:5000/api/notes/search?q=${query}`
-      //   : "http://localhost:5000/api/notes/";
 
       const res = await fetch(url);
       const data = await res.json();
@@ -36,9 +67,21 @@ const Listings = () => {
         throw new Error(data.error || "Failed to fetch notes");
       }
 
-      setNotes(data);
+      // Filter for valid notes
+      const validNotes = Array.isArray(data) ? data.filter(n => n.title && n.seller && n.seller.fullName) : [];
+
+      if (validNotes.length === 0 && !query) {
+        setNotes(dummyNotes);
+      } else {
+        setNotes(validNotes);
+      }
     } catch (err) {
-      setError(err.message);
+      console.error("Fetch error:", err);
+      if (!query) {
+        setNotes(dummyNotes);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

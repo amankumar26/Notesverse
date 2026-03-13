@@ -14,7 +14,7 @@ const ProfileSetup = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, updateUser } = useAuth();
 
   // Centralized State for all steps
   const [formData, setFormData] = useState({
@@ -39,12 +39,41 @@ const ProfileSetup = () => {
     }));
   };
 
-  const nextStep = () => {
-    if (currentStep < totalSteps) setCurrentStep((prev) => prev + 1);
-  };
-
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep((prev) => prev - 1);
+  };
+
+  const saveProgress = async () => {
+    try {
+      // We mark as complete so they aren't forced back here on next login
+      const updateBody = { ...formData, isProfileComplete: true };
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/update-profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateBody),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (updateUser) {
+          updateUser({ isProfileComplete: true, ...data });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to save partial progress", error);
+    }
+  };
+
+  const nextStep = () => {
+    // If they finish step 1, we mark them as "complete" so they don't get 
+    // forced back here on every login.
+    if (currentStep === 1) {
+      saveProgress();
+    }
+    if (currentStep < totalSteps) setCurrentStep((prev) => prev + 1);
   };
 
   const handleFinishSetup = async (isSkipping = false) => {
@@ -68,11 +97,10 @@ const ProfileSetup = () => {
       });
 
       if (res.ok) {
-        // Update local storage
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        if (storedUser) {
-          storedUser.isProfileComplete = true;
-          localStorage.setItem("user", JSON.stringify(storedUser));
+        const data = await res.json();
+        // Update context (which handles localStorage automatically)
+        if (updateUser) {
+          updateUser({ isProfileComplete: true, ...data });
         }
         navigate("/dashboard");
       }
@@ -135,14 +163,12 @@ const ProfileSetup = () => {
             </button>
 
             <div className="flex items-center gap-3">
-              {currentStep === 3 && (
-                <button
-                  onClick={() => handleFinishSetup(true)}
-                  className="flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm font-medium"
-                >
-                  Skip <SkipForward size={16} className="ml-1" />
-                </button>
-              )}
+              <button
+                onClick={() => handleFinishSetup(true)}
+                className="flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm font-medium mr-2"
+              >
+                Skip for now <SkipForward size={16} className="ml-1" />
+              </button>
 
               {currentStep < totalSteps ? (
                 <button

@@ -26,7 +26,21 @@ const Chat = () => {
         });
         const data = await res.json();
         if (res.ok) {
-          setContacts(data);
+          if (data.length > 0) {
+            setContacts(data);
+          } else {
+            // Add a dummy contact if none exist
+            setContacts([
+              {
+                id: "dummy_support",
+                name: "Notesverse Support",
+                lastMessage: "Hello! How can we help you today?",
+                avatar: "https://ui-avatars.com/api/?name=Notesverse+Support&background=3b82f6&color=fff",
+                unreadCount: 1,
+                isDummy: true
+              }
+            ]);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch contacts:", err);

@@ -48,9 +48,6 @@ const StatsOverview = ({ stats }) => {
                         <div className={`p-3 rounded-lg ${item.bg} ${item.border} border`}>
                             <item.icon className={`w-6 h-6 ${item.color}`} />
                         </div>
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${item.bg} ${item.color}`}>
-                            +12%
-                        </span>
                     </div>
                     <h3 className="text-2xl font-bold text-white mb-1">{item.value}</h3>
                     <p className="text-sm text-gray-400">{item.label}</p>

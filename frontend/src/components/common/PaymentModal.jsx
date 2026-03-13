@@ -1,195 +1,303 @@
 import React, { useState, useEffect } from "react";
-import { X, Smartphone, Landmark, Copy, Check, Loader } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, CreditCard, ShieldCheck, Loader, CheckCircle, Smartphone, AlertCircle, QrCode, Copy, Info } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { QRCodeCanvas } from "qrcode.react";
+import confetti from "canvas-confetti";
 
-const PaymentModal = ({ noteId, noteTitle, price, currency, onClose }) => {
-    const { token } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [paymentDetails, setPaymentDetails] = useState(null);
-    const [error, setError] = useState(null);
-    const [selectedMethod, setSelectedMethod] = useState(null);
+const PaymentModal = ({ isOpen, onClose, noteId, noteTitle, price, currency }) => {
+    const { token, authUser } = useAuth();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [step, setStep] = useState(1); // 1: Initial, 2: QR Code, 3: Success
+    const [paymentData, setPaymentData] = useState(null);
+    const [utr, setUtr] = useState("");
+    const [error, setError] = useState("");
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        const fetchDetails = async () => {
-            try {
-                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notes/${noteId}/payment-details`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || "Failed to fetch payment details");
-                setPaymentDetails(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
+        if (isOpen) {
+            setStep(1);
+            setUtr("");
+            setError("");
+            setLoading(false);
+        }
+    }, [isOpen]);
+
+    const handleInitiatePayment = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/create-order`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ noteId }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Failed to initiate payment");
+
+            setPaymentData(data);
+
+            if (data.method === "razorpay") {
+                openRazorpay(data);
+            } else {
+                setStep(2);
             }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const openRazorpay = (data) => {
+        const options = {
+            key: data.keyId,
+            amount: data.amount,
+            currency: data.currency,
+            name: "NoteVerse",
+            description: `Purchase: ${data.noteTitle}`,
+            order_id: data.orderId,
+            handler: async (response) => {
+                setLoading(true);
+                try {
+                    const verifyRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/verify-payment`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify(response),
+                    });
+
+                    if (verifyRes.ok) {
+                        triggerSuccess();
+                    } else {
+                        throw new Error("Verification failed");
+                    }
+                } catch (err) {
+                    setError("Payment verification failed. Please contact support.");
+                } finally {
+                    setLoading(false);
+                }
+            },
+            prefill: {
+                name: authUser?.fullName || "",
+                email: authUser?.email || "",
+            },
+            theme: { color: "#3B82F6" },
         };
-        fetchDetails();
-    }, [noteId, token]);
 
-    const handleCopy = (text) => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        const rzp = new window.Razorpay(options);
+        rzp.open();
     };
 
-    const currencySymbols = {
-        USD: "$", EUR: "€", GBP: "£", INR: "₹", JPY: "¥", CAD: "C$", AUD: "A$",
-    };
-    const symbol = currencySymbols[currency] || "₹";
+    const handleConfirmManualPayment = async () => {
+        if (!utr || utr.length < 8) {
+            setError("Please enter a valid Transaction ID / UTR (min 8 chars)");
+            return;
+        }
 
-    if (!token) return null;
+        setLoading(true);
+        setError("");
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/record-manual-payment`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    noteId,
+                    utr,
+                    amount: paymentData?.amount
+                }),
+            });
+
+            const manualResData = await res.json();
+            if (res.ok) {
+                triggerSuccess();
+            } else {
+                throw new Error(manualResData.error || "Failed to record payment");
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const triggerSuccess = () => {
+        setStep(3);
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ["#3B82F6", "#8B5CF6", "#10B981"]
+        });
+        setTimeout(() => {
+            onClose();
+            navigate("/my-notes");
+        }, 3000);
+    };
+
+    const copyUpiId = () => {
+        if (paymentData?.upiId) {
+            navigator.clipboard.writeText(paymentData.upiId);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    const upiLink = paymentData?.upiId 
+        ? `upi://pay?pa=${paymentData.upiId}&pn=NoteVerseSeller&am=${paymentData.amount}&cu=INR&tn=Notesverse-${noteTitle.substring(0, 20)}`
+        : "";
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-[#1F2937] w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-scale-up">
-                {/* Header */}
-                <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
-                    <div>
-                        <h3 className="text-xl font-bold text-white">Purchase Note</h3>
-                        <p className="text-sm text-gray-400 mt-1">Pay directly to the seller</p>
-                    </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-                        <X size={24} />
-                    </button>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
-                    <div className="mb-6 bg-blue-600/10 border border-blue-500/20 rounded-xl p-4 flex justify-between items-center">
-                        <div>
-                            <p className="text-sm text-blue-300 font-medium">Total Amount</p>
-                            <p className="text-2xl font-bold text-white">{symbol}{price}</p>
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative w-full max-w-md overflow-hidden glass-dark border border-white/10 rounded-3xl shadow-2xl"
+                >
+                    <div className="p-6 pb-2 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="text-blue-500" size={20} />
+                            <span className="text-xs font-bold text-blue-400 tracking-widest uppercase">Secure Checkout</span>
                         </div>
-                        <div className="text-right">
-                            <p className="text-sm text-gray-400">For</p>
-                            <p className="text-white font-medium truncate max-w-[150px]">{noteTitle}</p>
-                        </div>
+                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-colors">
+                            <X size={20} />
+                        </button>
                     </div>
 
-                    {loading ? (
-                        <div className="flex justify-center py-8">
-                            <Loader className="animate-spin text-blue-500" size={32} />
-                        </div>
-                    ) : error ? (
-                        <div className="text-red-400 text-center py-4">{error}</div>
-                    ) : (
-                        <div className="space-y-4">
-                            <p className="text-gray-300 mb-2">Select a payment method:</p>
+                    <div className="p-8 pt-2">
+                        {step === 1 && (
+                            <div className="text-center">
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-bold text-white mb-2">{noteTitle}</h3>
+                                    <p className="text-gray-400 text-sm">Review your order details before proceeding to payment.</p>
+                                </div>
 
-                            {/* UPI Option */}
-                            {paymentDetails?.upiId && (
+                                <div className="bg-white/5 rounded-2xl p-6 border border-white/5 mb-8">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-gray-400">Amount to pay</span>
+                                        <span className="text-3xl font-black text-white">₹{price}</span>
+                                    </div>
+                                    <div className="h-[1px] bg-white/10 mb-4" />
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 justify-center">
+                                        <ShieldCheck size={14} />
+                                        <span>Fully encrypted SSL secure transaction</span>
+                                    </div>
+                                </div>
+
                                 <button
-                                    onClick={() => setSelectedMethod("upi")}
-                                    className={`w-full flex items-center p-4 rounded-xl border transition-all ${selectedMethod === "upi"
-                                        ? "bg-blue-600/20 border-blue-500 text-white"
-                                        : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600"
-                                        }`}
+                                    onClick={handleInitiatePayment}
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
                                 >
-                                    <div className="p-2 bg-purple-500/20 rounded-lg mr-4">
-                                        <Smartphone className="text-purple-400" size={24} />
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-bold">Pay via UPI</p>
-                                        <p className="text-sm opacity-70">Google Pay, PhonePe, Paytm</p>
-                                    </div>
+                                    {loading ? <Loader className="animate-spin" /> : <Smartphone size={20} />}
+                                    <span>{loading ? "Processing..." : "Proceed to Payment"}</span>
                                 </button>
-                            )}
+                                
+                                {error && (
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center gap-2">
+                                        <AlertCircle size={14} /> {error}
+                                    </motion.div>
+                                )}
+                            </div>
+                        )}
 
-                            {/* Bank Option */}
-                            {paymentDetails?.bankDetails?.accountNumber && (
-                                <button
-                                    onClick={() => setSelectedMethod("bank")}
-                                    className={`w-full flex items-center p-4 rounded-xl border transition-all ${selectedMethod === "bank"
-                                        ? "bg-blue-600/20 border-blue-500 text-white"
-                                        : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600"
-                                        }`}
-                                >
-                                    <div className="p-2 bg-green-500/20 rounded-lg mr-4">
-                                        <Landmark className="text-green-400" size={24} />
+                        {step === 2 && (
+                            <div className="text-center space-y-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">Scan & Pay via UPI</h3>
+                                    <p className="text-xs text-blue-400 mt-1">Pay directly to the seller's UPI</p>
+                                </div>
+
+                                <div className="relative inline-block p-4 bg-white rounded-2xl shadow-xl">
+                                    <QRCodeCanvas
+                                        value={upiLink}
+                                        size={200}
+                                        level="H"
+                                        includeMargin={true}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 hover:opacity-100 transition-opacity bg-white/20 backdrop-blur-[1px] rounded-2xl">
+                                        <span className="bg-black/80 text-white text-[10px] px-2 py-1 rounded-full border border-white/20">Official QR</span>
                                     </div>
-                                    <div className="text-left">
-                                        <p className="font-bold">Bank Transfer</p>
-                                        <p className="text-sm opacity-70">IMPS, NEFT</p>
-                                    </div>
-                                </button>
-                            )}
+                                </div>
 
-                            {!paymentDetails?.upiId && !paymentDetails?.bankDetails?.accountNumber && (
-                                <p className="text-center text-gray-500 py-4">
-                                    This seller has not set up any payment methods yet. Please contact them via chat.
-                                </p>
-                            )}
-
-                            {/* Selected Method Details */}
-                            {selectedMethod === "upi" && (
-                                <div className="mt-4 p-4 bg-gray-900 rounded-xl border border-gray-700 animate-fade-in">
-                                    <p className="text-sm text-gray-400 mb-2">Seller's UPI ID:</p>
-                                    <div className="flex items-center justify-between bg-black/30 p-3 rounded-lg border border-gray-700">
-                                        <span className="font-mono text-white">{paymentDetails.upiId}</span>
-                                        <button
-                                            onClick={() => handleCopy(paymentDetails.upiId)}
-                                            className="text-gray-400 hover:text-white"
-                                        >
-                                            {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 justify-center bg-gray-900/50 p-3 rounded-xl border border-white/5">
+                                        <span className="text-gray-400 text-xs truncate max-w-[150px]">{paymentData?.upiId}</span>
+                                        <button onClick={copyUpiId} className="text-blue-400 hover:text-white transition-colors">
+                                            {copied ? <CheckCircle size={16} /> : <Copy size={16} />}
                                         </button>
                                     </div>
-                                    <p className="text-xs text-yellow-500/80 mt-3">
-                                        * Open your UPI app and pay to this ID. Take a screenshot of the payment for reference.
-                                    </p>
-                                </div>
-                            )}
 
-                            {selectedMethod === "bank" && (
-                                <div className="mt-4 p-4 bg-gray-900 rounded-xl border border-gray-700 animate-fade-in space-y-3">
-                                    <div>
-                                        <p className="text-xs text-gray-500">Account Number</p>
-                                        <div className="flex items-center justify-between">
-                                            <p className="font-mono text-white">{paymentDetails.bankDetails.accountNumber}</p>
-                                            <button onClick={() => handleCopy(paymentDetails.bankDetails.accountNumber)} className="text-gray-400 hover:text-white"><Copy size={14} /></button>
+                                    <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-left">
+                                        <div className="flex items-start gap-3">
+                                            <Info className="text-blue-400 mt-0.5" size={16} />
+                                            <div>
+                                                <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">Confirm Payment</p>
+                                                <p className="text-blue-300 text-[10px] leading-relaxed">Scan with GPay/PhonePe and enter the 12-digit UTR/Ref No. below to unlock your note instantly.</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">IFSC Code</p>
-                                        <p className="font-mono text-white">{paymentDetails.bankDetails.ifscCode}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Account Holder</p>
-                                        <p className="text-white">{paymentDetails.bankDetails.accountHolderName}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Bank Name</p>
-                                        <p className="text-white">{paymentDetails.bankDetails.bankName}</p>
+
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter 12-digit UTR / Transaction ID"
+                                            value={utr}
+                                            onChange={(e) => setUtr(e.target.value)}
+                                            className="w-full bg-gray-900/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white text-center focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        />
+                                        <button
+                                            onClick={handleConfirmManualPayment}
+                                            disabled={loading || !utr}
+                                            className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:bg-gray-800 disabled:text-gray-600 transition-all"
+                                        >
+                                            {loading ? <Loader className="animate-spin" size={18} /> : <CheckCircle size={18} />}
+                                            Confirm Submission
+                                        </button>
+                                        {error && <p className="text-red-400 text-[10px]">{error}</p>}
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        )}
 
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-700 bg-gray-800/50 flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-gray-300 hover:text-white font-medium mr-2"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20"
-                        onClick={() => {
-                            alert("After payment, please send the screenshot to the seller via chat to receive your note.");
-                            onClose();
-                        }}
-                    >
-                        I Have Paid
-                    </button>
-                </div>
+                        {step === 3 && (
+                            <div className="text-center py-10 space-y-6">
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/30"
+                                >
+                                    <CheckCircle className="text-green-500" size={48} />
+                                </motion.div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-white">Payment Successful!</h3>
+                                    <p className="text-gray-400 mt-2">Your note is now ready for download.</p>
+                                </div>
+                                <div className="text-xs text-blue-400 animate-pulse">Redirecting to your library...</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-[60px] rounded-full pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-600/10 blur-[60px] rounded-full pointer-events-none" />
+                </motion.div>
             </div>
-        </div>
+        </AnimatePresence>
     );
 };
 

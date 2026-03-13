@@ -1,5 +1,5 @@
 import express from "express";
-import { signup, signin, updateProfile, getUserProfile, removeProfilePicture } from "../controllers/auth.controller.js";
+import { signup, signin, updateProfile, getUserProfile, removeProfilePicture, getStats } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/protectRoute.js";
 import multer from "multer";
 const router = express.Router();
@@ -24,5 +24,8 @@ router.get("/user/:id", protectRoute, getUserProfile);
 
 // Route for removing profile picture
 router.put("/remove-profile-picture", protectRoute, removeProfilePicture);
+
+// Route for getting dashboard stats
+router.get("/get-stats", protectRoute, getStats);
 
 export default router;

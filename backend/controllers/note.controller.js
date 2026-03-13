@@ -1,8 +1,10 @@
 import Note from "../models/note.model.js";
 import User from "../models/user.model.js";
 import path from "path";
+import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary"; // Import the main cloudinary object
 import { decrypt } from "../utils/encryption.js";
+import Order from "../models/order.model.js";
 
 // This is a helper function that takes a file buffer (from memory) and uploads it to Cloudinary.
 // It returns a Promise, so we can use await with it.
@@ -105,14 +107,48 @@ export const getAllNotes = async (req, res) => {
 export const getNoteById = async (req, res) => {
   try {
     const { id } = req.params;
+    const authHeader = req.headers.authorization;
+    let userId = null;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) {
+        // Invalid token, treat as guest
+      }
+    }
+
     const note = await Note.findById(id).populate(
       "seller",
       "fullName profilePicture"
     );
+
     if (!note) {
       return res.status(404).json({ error: "Note not found." });
     }
-    res.status(200).json(note);
+
+    let isPurchased = false;
+    if (userId) {
+      // Check if user is the seller
+      if (note.seller._id.toString() === userId.toString()) {
+        isPurchased = true;
+      } else {
+        // Check if user has a completed order for this note
+        const order = await Order.findOne({
+          buyer: userId,
+          note: id,
+          status: "completed",
+        });
+        if (order) isPurchased = true;
+      }
+    }
+
+    const noteObj = note.toObject();
+    noteObj.isPurchased = isPurchased;
+
+    res.status(200).json(noteObj);
   } catch (error) {
     console.error("Error in getNoteById controller:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
@@ -264,6 +300,36 @@ export const getNotePaymentDetails = async (req, res) => {
     res.status(200).json(paymentDetails);
   } catch (error) {
     console.error("Error in getNotePaymentDetails controller:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// --- GET PURCHASED NOTES ---
+export const getPurchasedNotes = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Find all completed orders for this user
+    const orders = await Order.find({ buyer: userId, status: "completed" }).populate({
+      path: "note",
+      populate: {
+        path: "seller",
+        select: "fullName profilePicture"
+      }
+    });
+
+    // Extract the note objects and mark them as purchased
+    const notes = orders
+      .filter(order => order.note) // Ensure the note still exists
+      .map(order => {
+        const noteObj = order.note.toObject();
+        noteObj.isPurchased = true;
+        return noteObj;
+      });
+
+    res.status(200).json(notes);
+  } catch (error) {
+    console.error("Error in getPurchasedNotes controller:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
