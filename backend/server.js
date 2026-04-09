@@ -9,9 +9,15 @@ import chatRoutes from "./routes/chat.route.js";
 import paymentRoutes from "./routes/payment.route.js";
 import http from "http";
 import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Load Environment Variables
 dotenv.config();
+
+// Fix for __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialize Express App
 const app = express();
@@ -84,6 +90,21 @@ console.log("Cloudinary configured...");
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/payments", paymentRoutes);
+
+// --- SERVE FRONTEND IN PRODUCTION ---
+if (process.env.NODE_ENV === "production") {
+  // Use the path to your frontend dist folder
+  const frontendPath = path.join(__dirname, "../frontend/dist");
+  
+  // Serve static files (CSS, JS, Images)
+  app.use(express.static(frontendPath));
+
+  // Catch-all route to serve index.html for any other request
+  // This allows React Router to handle the routing
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(frontendPath, "index.html"));
+  });
+}
 
 io.on("connection", (socket) => {
   // console.log(`New Connection: ${socket.id}`);
