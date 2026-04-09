@@ -42,6 +42,24 @@ const noteSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // The type of document: notes, paper, research, etc.
+    category: {
+      type: String,
+      required: true,
+      enum: ["notes", "previous_year_paper", "research_paper"],
+      default: "notes",
+    },
+    // The academic course: B.Tech, B.Com, B.Sc, etc.
+    course: {
+      type: String,
+      required: true,
+      default: "Other",
+    },
+    // The semester/year
+    semester: {
+      type: String,
+      default: "",
+    },
     // A special field that links this note to a specific user
     seller: {
       type: mongoose.Schema.Types.ObjectId, // This stores a User's unique ID

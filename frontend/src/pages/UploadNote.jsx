@@ -12,6 +12,9 @@ const UploadNote = () => {
     price: "",
     subject: "",
     currency: "INR",
+    course: "B.Tech",
+    semester: "",
+    category: "notes",
   });
   const [file, setFile] = useState(null);
   const [error, setError] = useState(null);
@@ -66,6 +69,9 @@ const UploadNote = () => {
     data.append("price", formData.price);
     data.append("currency", formData.currency);
     data.append("subject", formData.subject);
+    data.append("course", formData.course);
+    data.append("semester", formData.semester);
+    data.append("category", formData.category);
     data.append("noteFile", file);
     data.append("sellerId", authUser._id);
 
@@ -142,7 +148,61 @@ const UploadNote = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                   <div>
+                  <div>
+                    <label htmlFor="course" className="block text-sm font-semibold text-gray-400 mb-2">Course / Degree</label>
+                    <select
+                      id="course"
+                      value={formData.course}
+                      onChange={handleChange}
+                      className="w-full bg-gray-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                      required
+                    >
+                      <option value="B.Tech">B.Tech</option>
+                      <option value="B.Com">B.Com</option>
+                      <option value="B.Sc">B.Sc</option>
+                      <option value="BBA">BBA</option>
+                      <option value="BA">BA</option>
+                      <option value="MBA">MBA</option>
+                      <option value="M.Tech">M.Tech</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="category" className="block text-sm font-semibold text-gray-400 mb-2">Type of Document</label>
+                    <select
+                      id="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="w-full bg-gray-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                      required
+                    >
+                      <option value="notes">Study Notes</option>
+                      <option value="previous_year_paper">Previous Year Paper</option>
+                      <option value="research_paper">Research Paper</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="semester" className="block text-sm font-semibold text-gray-400 mb-2">Semester / Year</label>
+                    <select
+                      id="semester"
+                      value={formData.semester}
+                      onChange={handleChange}
+                      className="w-full bg-gray-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                    >
+                      <option value="">Select Semester</option>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                        <option key={sem} value={`Semester ${sem}`}>Semester {sem}</option>
+                      ))}
+                      <option value="Year 1">Year 1</option>
+                      <option value="Year 2">Year 2</option>
+                      <option value="Year 3">Year 3</option>
+                      <option value="Year 4">Year 4</option>
+                    </select>
+                  </div>
+                  <div>
                     <label htmlFor="subject" className="block text-sm font-semibold text-gray-400 mb-2">Subject Category</label>
                     <input
                       type="text"
@@ -154,26 +214,26 @@ const UploadNote = () => {
                       required
                     />
                   </div>
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <label htmlFor="price" className="block text-sm font-semibold text-gray-400 mb-2">Price</label>
+                </div>
+
+                <div className="flex gap-6">
+                  <div className="flex-1">
+                    <label htmlFor="price" className="block text-sm font-semibold text-gray-400 mb-2">Price</label>
+                    <div className="flex gap-3">
                       <input
                         type="number"
                         id="price"
                         placeholder="0.00"
                         value={formData.price}
                         onChange={handleChange}
-                        className="w-full bg-gray-900/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                        className="flex-1 bg-gray-900/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                         required
                       />
-                    </div>
-                    <div className="w-24">
-                      <label htmlFor="currency" className="block text-sm font-semibold text-gray-400 mb-2">Currency</label>
                       <select
                         id="currency"
                         value={formData.currency}
                         onChange={handleChange}
-                        className="w-full bg-gray-900/50 border border-white/10 rounded-xl px-2 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                        className="w-24 bg-gray-900/50 border border-white/10 rounded-xl px-2 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
                       >
                         <option value="INR">INR</option>
                         <option value="USD">USD</option>

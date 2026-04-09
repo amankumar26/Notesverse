@@ -30,15 +30,15 @@ const uploadToCloudinary = (fileBuffer, options) => {
 // --- UPLOAD a new note (MANUAL UPLOAD LOGIC) ---
 export const uploadNote = async (req, res) => {
   try {
-    const { title, description, price, subject, currency } = req.body;
+    const { title, description, price, subject, currency, course, semester, category } = req.body;
     const sellerId = req.user._id;
 
     // --- 1. Validate Input ---
     if (!req.file) {
       return res.status(400).json({ error: "File is required." });
     }
-    if (!title || !description || !price || !subject) {
-      return res.status(400).json({ error: "All text fields are required." });
+    if (!title || !description || !price || !subject || !course || !category) {
+      return res.status(400).json({ error: "Required fields are missing." });
     }
 
     // --- 2. Sanitize the Filename ---
@@ -78,6 +78,9 @@ export const uploadNote = async (req, res) => {
       price: Number(price),
       currency: currency || "USD",
       subject,
+      course,
+      semester,
+      category,
       fileUrl: originalFileUrl,
       thumbnailUrl: thumbnailUrl,
       fileType: req.file.mimetype,
@@ -94,9 +97,29 @@ export const uploadNote = async (req, res) => {
 
 export const getAllNotes = async (req, res) => {
   try {
-    const notes = await Note.find({})
+    const { course, category, semester, minPrice, maxPrice, sortBy } = req.query;
+    
+    // Build query object
+    let query = {};
+    if (course) query.course = course;
+    if (category) query.category = category;
+    if (semester) query.semester = semester;
+    
+    // Price filter
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    // Sorting
+    let sortOptions = { createdAt: -1 };
+    if (sortBy === 'priceLowHigh') sortOptions = { price: 1 };
+    if (sortBy === 'priceHighLow') sortOptions = { price: -1 };
+
+    const notes = await Note.find(query)
       .populate("seller", "fullName profilePicture")
-      .sort({ createdAt: -1 });
+      .sort(sortOptions);
     res.status(200).json(notes);
   } catch (error) {
     console.error("Error in getAllNotes controller:", error.message);
@@ -206,7 +229,7 @@ export const getNotesBySeller = async (req, res) => {
 export const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, price, subject, currency } = req.body;
+    const { title, description, price, subject, currency, course, semester, category } = req.body;
     const userId = req.user._id;
 
     // Find the note
@@ -223,9 +246,12 @@ export const updateNote = async (req, res) => {
     // Update fields
     note.title = title || note.title;
     note.description = description || note.description;
-    note.price = price || note.price;
+    note.price = price !== undefined ? price : note.price;
     note.currency = currency || note.currency;
     note.subject = subject || note.subject;
+    note.course = course || note.course;
+    note.semester = semester || note.semester;
+    note.category = category || note.category;
 
     await note.save();
     res.status(200).json(note);

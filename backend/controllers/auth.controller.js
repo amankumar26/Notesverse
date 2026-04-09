@@ -62,27 +62,38 @@ export const signin = async (req, res) => {
       { expiresIn: "1d" } // Optional: set an expiration time for the token
     );
 
-    // 5. Separate the password from the rest of the user data
-    // We do this so we don't send the hashed password back to the client
-    const { password: hashedPassword, ...userData } = validUser._doc;
+    // 5. Convert to plain object and remove password
+    const userObj = validUser.toObject();
+    const { password: hashedPassword, ...userData } = userObj;
 
-    // DECRYPT SENSITIVE DATA BEFORE SENDING TO CLIENT
-    if (userData.upiId) userData.upiId = decrypt(userData.upiId);
-    if (userData.bankDetails) {
-      // We need to clone it to avoid modifying the mongoose document directly if it's attached
-      const decryptedBankDetails = { ...userData.bankDetails };
-      if (decryptedBankDetails.accountNumber) decryptedBankDetails.accountNumber = decrypt(decryptedBankDetails.accountNumber);
-      if (decryptedBankDetails.ifscCode) decryptedBankDetails.ifscCode = decrypt(decryptedBankDetails.ifscCode);
-      // Account Holder Name and Bank Name are usually not considered "secret" in the same way, but we can encrypt them if we want.
-      // For now, let's just encrypt the account number and IFSC as they are critical.
-      userData.bankDetails = decryptedBankDetails;
+    // 6. Decrypt sensitive data before sending to client
+    try {
+      if (userData.upiId) {
+        userData.upiId = decrypt(userData.upiId);
+      }
+      
+      if (userData.bankDetails) {
+        if (userData.bankDetails.accountNumber) {
+          userData.bankDetails.accountNumber = decrypt(userData.bankDetails.accountNumber);
+        }
+        if (userData.bankDetails.ifscCode) {
+          userData.bankDetails.ifscCode = decrypt(userData.bankDetails.ifscCode);
+        }
+      }
+    } catch (decryptError) {
+      console.error("Decryption failed during signin:", decryptError.message);
+      // We continue even if decryption fails, the user can still sign in
     }
 
-    // 6. Send the token and user data back to the client
+    // 7. Send the token and user data back to the client
     res.status(200).json({ token, user: userData });
   } catch (error) {
-    console.error("Error in signin controller:", error.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("SIGNIN ERROR DETAILS:", error);
+    res.status(500).json({ 
+      error: "Internal Server Error", 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'production' ? null : error.stack 
+    });
   }
 };
 

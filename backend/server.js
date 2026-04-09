@@ -19,14 +19,24 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      
       const allowedOrigins = [
         "http://localhost:5173",
+        "http://127.0.0.1:5173",
         /\.vercel\.app$/,
         /\.onrender\.com$/
       ];
-      if (!origin || allowedOrigins.some(ao => (typeof ao === 'string' ? ao === origin : ao.test(origin)))) {
+
+      // Check if it's in the list or a local network IP
+      const isAllowed = allowedOrigins.some(ao => (typeof ao === 'string' ? ao === origin : ao.test(origin))) || 
+                        /^http:\/\/192\.168\.\d+\.\d+:5173$/.test(origin);
+
+      if (isAllowed) {
         callback(null, true);
       } else {
+        console.log("CORS blocked origin:", origin);
         callback(null, false);
       }
     },
@@ -40,13 +50,20 @@ const PORT = process.env.PORT || 5000;
 //Configure Middleware
 app.use(cors({
   origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
     const allowedOrigins = [
       "http://localhost:5173",
+      "http://127.0.0.1:5173",
       "http://localhost:5000",
       /\.vercel\.app$/,
       /\.onrender\.com$/
     ];
-    if (!origin || allowedOrigins.some(ao => (typeof ao === 'string' ? ao === origin : ao.test(origin)))) {
+
+    const isAllowed = allowedOrigins.some(ao => (typeof ao === 'string' ? ao === origin : ao.test(origin))) || 
+                      /^http:\/\/192\.168\.\d+\.\d+:5173$/.test(origin);
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
