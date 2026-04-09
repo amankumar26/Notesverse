@@ -253,8 +253,15 @@ const Listings = () => {
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4, 1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-[300px] bg-gray-900/50 rounded-2xl animate-pulse border border-white/5" />
+              {[...Array(8)].map((_, i) => (
+                <div key={`skeleton-${i}`} className="bg-gray-900/40 rounded-3xl p-4 border border-white/5 space-y-4 animate-pulse">
+                  <div className="aspect-video bg-gray-800 rounded-2xl w-full" />
+                  <div className="h-4 bg-gray-800 rounded-full w-3/4" />
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 bg-gray-800 rounded-full w-1/4" />
+                    <div className="h-6 bg-gray-800 rounded-full w-1/4" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : error ? (
