@@ -106,41 +106,70 @@ const NoteDetail = () => {
             </Link>
           </p>
 
-          {/* Document Preview Section */}
+          {/* Document Display/Preview Section */}
           <div className="mb-8 group">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
-                Document Preview
+                {note?.isPurchased ? "Full Document" : "Document Preview"}
               </h2>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded">
-                {note?.fileType?.split('/')[1]?.toUpperCase() || 'PDF'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-1 rounded">
+                  {note?.fileType?.split('/')[1]?.toUpperCase() || 'PDF'}
+                </span>
+                {note?.isPurchased && (
+                  <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded">
+                    PURCHASED
+                  </span>
+                )}
+              </div>
             </div>
             
-            <div className="relative aspect-[3/4] md:aspect-video w-full rounded-2xl overflow-hidden glass border border-white/10 group-hover:border-white/20 transition-all duration-500 bg-slate-900 flex items-center justify-center">
-              {note?.thumbnailUrl ? (
-                <>
-                  <img 
-                    src={note.thumbnailUrl} 
-                    alt="Document Preview" 
-                    className="w-full h-full object-contain pointer-events-none group-hover:scale-[1.02] transition-transform duration-700"
+            <div className="relative w-full rounded-2xl overflow-hidden glass border border-white/10 bg-slate-900 shadow-2xl">
+              {note?.isPurchased ? (
+                <div className="aspect-[3/4] md:aspect-[16/10] w-full">
+                  <iframe 
+                    src={`${note.fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                    className="w-full h-full border-none"
+                    title="Document Viewer"
                   />
-                  {!note?.isPurchased && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1d] via-transparent to-transparent flex items-end justify-center pb-12">
-                      <div className="glass px-6 py-3 rounded-full flex items-center gap-3 backdrop-blur-md border border-white/20 animate-float">
-                        <div className="p-1 px-2.5 bg-blue-500 rounded-full text-[10px] font-bold">PREVIEW</div>
-                        <span className="text-sm font-bold text-white">Full access available after purchase</span>
+                </div>
+              ) : (
+                <div className="relative aspect-[3/4] md:aspect-video w-full flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-hidden relative">
+                    {note?.thumbnailUrl ? (
+                      <img 
+                        src={note.thumbnailUrl} 
+                        alt="Preview" 
+                        className="w-full h-full object-contain pointer-events-none blur-[1px]"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-600">
+                        <Download size={48} className="opacity-20" />
+                      </div>
+                    )}
+                    
+                    {/* Overlay for Unpurchased */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1d] via-[#0a0f1d]/40 to-transparent flex flex-col items-center justify-center p-6 text-center">
+                      <div className="glass p-8 rounded-3xl border border-white/10 backdrop-blur-md max-w-sm animate-float">
+                        <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
+                          <Download size={28} className="text-blue-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">Unlock Full Document</h3>
+                        <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                          This document has multiple pages. Purchase now to read all sections and download the high-quality file.
+                        </p>
+                        {!note?.isPurchased && (
+                          <button 
+                            onClick={() => setIsPaymentModalOpen(true)}
+                            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20"
+                          >
+                            Buy to Unlock
+                          </button>
+                        )}
                       </div>
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-slate-600 flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center animate-pulse">
-                    <Download size={32} />
                   </div>
-                  <span className="font-bold tracking-widest uppercase text-xs">Preview Loading...</span>
                 </div>
               )}
             </div>
@@ -156,15 +185,18 @@ const NoteDetail = () => {
             </p>
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between bg-[#1F2937] p-4 rounded-lg border border-gray-700 gap-4 sm:gap-0">
-            <span className="text-3xl font-bold text-green-400">
-              {symbol}{note?.price?.toFixed(2)}
-            </span>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between bg-white/[0.02] backdrop-blur-md p-6 rounded-2xl border border-white/5 gap-4 sm:gap-0 shadow-xl">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Price</span>
+              <span className="text-3xl font-display font-extrabold text-white">
+                {symbol}{note?.price?.toFixed(2)}
+              </span>
+            </div>
             <div className="flex w-full sm:w-auto gap-4">
               {!note?.isPurchased && (
                 <button
                   onClick={handleBargain}
-                  className="flex-1 sm:flex-none bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                  className="flex-1 sm:flex-none glass border border-white/10 hover:bg-white/5 text-slate-300 font-bold py-3 px-8 rounded-xl transition-all"
                 >
                   Bargain
                 </button>
@@ -174,17 +206,17 @@ const NoteDetail = () => {
                   href={note.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded-lg shadow-lg shadow-green-600/20 transition-all"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-white font-bold py-3 px-10 rounded-xl shadow-lg shadow-brand-500/20 transition-all"
                 >
                   <Download size={20} />
-                  Download Note
+                  Download Notes
                 </a>
               ) : (
                 <button
                   onClick={() => setIsPaymentModalOpen(true)}
-                  className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg shadow-lg shadow-blue-600/20 transition-all"
+                  className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-10 rounded-xl shadow-lg shadow-blue-600/20 animate-shimmer"
                 >
-                  Buy Now
+                  Buy Access
                 </button>
               )}
             </div>
