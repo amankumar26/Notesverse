@@ -106,9 +106,52 @@ const NoteDetail = () => {
             </Link>
           </p>
 
-          <div className="bg-[#1F2937] p-6 rounded-lg border border-gray-700">
-            <h2 className="text-2xl font-semibold mb-4">Description</h2>
-            <p className="text-gray-300 whitespace-pre-wrap">
+          {/* Document Preview Section */}
+          <div className="mb-8 group">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+                Document Preview
+              </h2>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded">
+                {note?.fileType?.split('/')[1]?.toUpperCase() || 'PDF'}
+              </span>
+            </div>
+            
+            <div className="relative aspect-[3/4] md:aspect-video w-full rounded-2xl overflow-hidden glass border border-white/10 group-hover:border-white/20 transition-all duration-500 bg-slate-900 flex items-center justify-center">
+              {note?.thumbnailUrl ? (
+                <>
+                  <img 
+                    src={note.thumbnailUrl} 
+                    alt="Document Preview" 
+                    className="w-full h-full object-contain pointer-events-none group-hover:scale-[1.02] transition-transform duration-700"
+                  />
+                  {!note?.isPurchased && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1d] via-transparent to-transparent flex items-end justify-center pb-12">
+                      <div className="glass px-6 py-3 rounded-full flex items-center gap-3 backdrop-blur-md border border-white/20 animate-float">
+                        <div className="p-1 px-2.5 bg-blue-500 rounded-full text-[10px] font-bold">PREVIEW</div>
+                        <span className="text-sm font-bold text-white">Full access available after purchase</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-slate-600 flex flex-col items-center gap-4">
+                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center animate-pulse">
+                    <Download size={32} />
+                  </div>
+                  <span className="font-bold tracking-widest uppercase text-xs">Preview Loading...</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-[#1F2937]/50 backdrop-blur-sm p-8 rounded-2xl border border-white/5 space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
+              Description
+            </h2>
+            <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
               {note?.description}
             </p>
           </div>
