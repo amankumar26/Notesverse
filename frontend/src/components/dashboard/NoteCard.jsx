@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Pencil, Trash2 } from 'lucide-react';
+import { MessageCircle, Pencil, Trash2, BookOpen, User } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-// 1. Add 'thumbnailUrl' and 'sellerId' to the list of props
 const NoteCard = ({ id, title, author, price, subject, thumbnailUrl, sellerId, isOwner, onEdit, onDelete, sellerProfilePicture, currency }) => {
   const navigate = useNavigate();
 
@@ -12,14 +12,12 @@ const NoteCard = ({ id, title, author, price, subject, thumbnailUrl, sellerId, i
     GBP: "£",
     INR: "₹",
     JPY: "¥",
-    CAD: "C$",
-    AUD: "A$",
   };
 
-  const symbol = currencySymbols[currency] || "$";
+  const symbol = currencySymbols[currency] || "₹";
 
   const handleBargain = (e) => {
-    e.preventDefault(); // Prevent navigation to the note detail page
+    e.preventDefault();
     e.stopPropagation();
     navigate("/chat", {
       state: {
@@ -36,85 +34,105 @@ const NoteCard = ({ id, title, author, price, subject, thumbnailUrl, sellerId, i
     });
   };
 
-  const handleEdit = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onEdit(id);
-  };
-
-  const handleDelete = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this note?")) {
-      onDelete(id);
-    }
-  };
-
   return (
-    <Link to={`/notes/${id}`} className="break-inside-avoid block mb-6 animate-fade-in">
-      <div className="glass-panel rounded-xl overflow-hidden hover:scale-[1.02] hover:shadow-2xl hover:border-blue-400/50 transition-all duration-300 group relative">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.3 }}
+      className="group"
+    >
+      <Link to={`/notes/${id}`} className="block">
+        <div className="glass-card rounded-2xl overflow-hidden relative">
+          {/* Image/Thumbnail Section */}
+          <div className="relative h-48 overflow-hidden bg-slate-800">
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt={title}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 group-hover:from-slate-700 group-hover:to-slate-800 transition-all">
+                <BookOpen className="w-12 h-12 text-slate-600 opacity-40" />
+              </div>
+            )}
+            
+            {/* Overlay Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* 2. Image container */}
-        <div className="w-full h-52 bg-gray-800 relative overflow-hidden">
-          {thumbnailUrl ? (
-            <img
-              src={thumbnailUrl}
-              alt={`${title} preview`}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 text-gray-600">
-              <span className="text-4xl font-bold opacity-20">NoteVerse</span>
+            {/* Price Badge */}
+            <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full shadow-xl">
+              <span className="text-sm font-bold text-white">
+                {symbol}{price}
+              </span>
             </div>
-          )}
 
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1F2937] via-transparent to-transparent opacity-60"></div>
-
-          {/* Action Buttons */}
-          {isOwner ? (
-            <div className="absolute bottom-3 right-3 flex space-x-2 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0">
-              <button
-                onClick={handleEdit}
-                className="bg-blue-600/90 hover:bg-blue-500 backdrop-blur-sm text-white p-2.5 rounded-full shadow-lg transition-transform hover:scale-110"
-                title="Edit Note"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                onClick={handleDelete}
-                className="bg-red-600/90 hover:bg-red-500 backdrop-blur-sm text-white p-2.5 rounded-full shadow-lg transition-transform hover:scale-110"
-                title="Delete Note"
-              >
-                <Trash2 size={16} />
-              </button>
+            {/* Actions on Hover */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {isOwner ? (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(id); }}
+                    className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all transform hover:scale-110"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(id); }}
+                    className="p-2 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md rounded-full text-red-400 transition-all transform hover:scale-110"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={handleBargain}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-sm font-semibold flex items-center gap-2 transition-all transform hover:scale-105 shadow-lg shadow-blue-600/20"
+                >
+                  <MessageCircle size={16} />
+                  Bargain
+                </button>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={handleBargain}
-              className="absolute bottom-3 right-3 bg-green-600/90 hover:bg-green-500 backdrop-blur-sm text-white p-2.5 rounded-full shadow-lg z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 hover:scale-110"
-              title="Bargain / Chat with Seller"
-            >
-              <MessageCircle size={18} />
-            </button>
-          )}
-        </div>
+          </div>
 
-        {/* 3. Details container */}
-        <div className="p-5">
-          <h3 className="font-bold text-lg mb-1 truncate text-white group-hover:text-blue-400 transition-colors">{title}</h3>
-          <p className="text-sm text-gray-400 mb-4">by <span className="text-gray-300">{author}</span></p>
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 px-3 py-1 rounded-full">
-              {subject}
-            </span>
-            <span className="font-bold text-xl text-gradient">{symbol}{price}</span>
+          {/* Content Section */}
+          <div className="p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold tracking-wider text-blue-400 uppercase bg-blue-400/10 px-2 py-0.5 rounded">
+                {subject}
+              </span>
+            </div>
+            
+            <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1 mb-1">
+              {title}
+            </h3>
+            
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-slate-700 overflow-hidden border border-white/10">
+                  {sellerProfilePicture ? (
+                    <img src={sellerProfilePicture} alt={author} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User size={12} className="text-slate-500" />
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs text-slate-400 font-medium">{author}</span>
+              </div>
+              
+              <div className="flex items-center gap-1 text-slate-500">
+                <BookOpen size={12} />
+                <span className="text-[10px]">PREMIUM</span>
+              </div>
+            </div>
           </div>
         </div>
-
-      </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 };
 
-export default NoteCard;
+export default NoteCard;

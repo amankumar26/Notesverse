@@ -98,13 +98,13 @@ export const uploadNote = async (req, res) => {
 export const getAllNotes = async (req, res) => {
   try {
     const { course, category, semester, minPrice, maxPrice, sortBy } = req.query;
-    
+
     // Build query object
     let query = {};
     if (course) query.course = course;
     if (category) query.category = category;
     if (semester) query.semester = semester;
-    
+
     // Price filter
     if (minPrice || maxPrice) {
       query.price = {};

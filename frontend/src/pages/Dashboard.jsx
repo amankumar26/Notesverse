@@ -10,6 +10,7 @@ import RecommendedNotes from "../components/dashboard/RecommendedNotes";
 import { useAuth } from "../context/AuthContext";
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import { Sparkles, Bell } from "lucide-react";
 
 const Dashboard = () => {
   const { authUser, token, updateUser } = useAuth();
@@ -56,48 +57,6 @@ const Dashboard = () => {
     { id: 4, type: 'purchase', message: 'You purchased "History of Art"', time: '1 week ago', emoji: '📚' },
   ]);
 
-  // Simulate live activity
-  useEffect(() => {
-    const names = ["Aarav", "Priya", "Rahul", "Ananya", "Vikram", "Neha", "Aditya", "Sneha", "Rohan", "Ishita", "Arjun", "Kavya", "Siddharth", "Meera"];
-    const subjects = ["Physics", "Calculus", "History", "Biology", "Chemistry", "Literature", "Computer Science", "Economics", "Psychology"];
-    const actions = [
-      { type: 'upload', verb: 'uploaded', emoji: '🚀 📄 ✨' },
-      { type: 'purchase', verb: 'bought', emoji: '💸 💰 🤑' },
-      { type: 'sale', verb: 'reviewed', suffix: 'with 5 stars ⭐⭐⭐⭐⭐', emoji: '⭐ 🌟 ✨' },
-      { type: 'download', verb: 'downloaded', emoji: '⬇️ 💾 📂' },
-      { type: 'like', verb: 'liked', emoji: '❤️ 👍 😍' },
-      { type: 'comment', verb: 'commented on', suffix: ': "Great notes! Very helpful."', emoji: '💬 💭 🗣️' },
-      { type: 'share', verb: 'shared', emoji: '🔗 📢 🌐' },
-      { type: 'achievement', verb: 'earned a badge in', emoji: '🏆 🥇 🎖️' },
-      { type: 'trending', verb: 'is trending in', emoji: '🔥 📈 🚀' },
-      { type: 'question', verb: 'asked a question about', emoji: '❓ 🤔 🧐' },
-      { type: 'answer', verb: 'answered a question on', emoji: '💡 🧠 ⚡' }
-    ];
-
-    const interval = setInterval(() => {
-      const randomName = names[Math.floor(Math.random() * names.length)];
-      const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
-      const randomAction = actions[Math.floor(Math.random() * actions.length)];
-
-      let message = `${randomName} ${randomAction.verb} "${randomSubject} Notes"`;
-      if (randomAction.suffix) {
-        message += ` ${randomAction.suffix}`;
-      }
-
-      const newActivity = {
-        id: Date.now(),
-        type: randomAction.type,
-        message: message,
-        time: 'Just now',
-        emoji: randomAction.emoji
-      };
-
-      setActivities(prev => [newActivity, ...prev].slice(0, 5));
-    }, 5000); // Add new activity every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     const hasSeenTour = authUser?.hasSeenTour;
 
@@ -109,8 +68,8 @@ const Dashboard = () => {
           {
             element: '#sidebar',
             popover: {
-              title: 'Navigation Sidebar',
-              description: 'Use this sidebar to navigate between your Dashboard, My Notes, Upload, Chat, and Settings.',
+              title: 'Navigation Workspace',
+              description: 'Access your content, marketplace, and messaging hub from here.',
               side: "right",
               align: 'start'
             }
@@ -118,35 +77,16 @@ const Dashboard = () => {
           {
             element: '#stats-overview',
             popover: {
-              title: 'Your Stats',
-              description: 'Quickly see your earnings, uploads, and purchases at a glance.',
+              title: 'Performance Insights',
+              description: 'Monitor your earnings and engagement metrics in real-time.',
               side: "bottom",
               align: 'start'
-            }
-          },
-          {
-            element: '#quick-actions',
-            popover: {
-              title: 'Quick Actions',
-              description: 'Fast access to common tasks like uploading notes or checking messages.',
-              side: "left",
-              align: 'center'
-            }
-          },
-          {
-            element: '#recommended-notes',
-            popover: {
-              title: 'Recommended For You',
-              description: 'Check out notes we think you might like.',
-              side: "top",
-              align: 'center'
             }
           }
         ],
         onDestroyStarted: async () => {
           if (!driverObj.hasNextStep() || confirm("Are you sure you want to skip the tour?")) {
             driverObj.destroy();
-            // Update backend
             try {
               await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/update-profile`, {
                 method: "PUT",
@@ -156,8 +96,6 @@ const Dashboard = () => {
                 },
                 body: JSON.stringify({ hasSeenTour: true }),
               });
-
-              // Update context and local storage
               if (updateUser) {
                 updateUser({ hasSeenTour: true });
               }
@@ -168,65 +106,102 @@ const Dashboard = () => {
         },
       });
 
-      // Small delay to ensure DOM is ready
       setTimeout(() => {
         driverObj.drive();
-      }, 1000);
+      }, 1500);
     }
   }, [authUser, token]);
 
   return (
-    <div className="min-h-screen bg-[#111827] flex">
+    <div className="min-h-screen bg-[#0a0f1d] flex overflow-hidden">
       <Sidebar />
-      <main className="flex-1 p-4 md:p-8 pt-16 md:pt-8 overflow-y-auto">
-        <div id="welcome-header" className="flex justify-between items-center mb-8 animate-slide-up">
-          <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">
-              Dashboard
-            </h2>
-            <p className="text-gray-400 mt-1 flex items-center gap-2">
-              Welcome back, <span className="text-blue-400 font-medium">{authUser?.fullName || "User"}</span>
-              <motion.span
-                animate={{ rotate: [0, 14, -8, 14, -4, 10, 0, 0] }}
-                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1 }}
-                style={{ originX: 0.7, originY: 0.7, display: 'inline-block' }}
-              >
-                👋
-              </motion.span>
-              ! Here's what's happening.
-            </p>
+      <main className="flex-1 h-screen overflow-y-auto scrollbar-hide">
+        <div className="max-w-[1400px] mx-auto p-6 md:p-10 pt-20 md:pt-10">
+          
+          {/* Header Section */}
+          <div id="welcome-header" className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 animate-fade-in">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-widest">
+                <Sparkles size={14} />
+                <span>Overview</span>
+              </div>
+              <h2 className="text-4xl font-display font-extrabold text-white tracking-tight">
+                Welcome back, <span className="text-gradient">{authUser?.fullName?.split(' ')[0] || "User"}</span>
+              </h2>
+              <p className="text-slate-400 text-sm font-medium">
+                Here's a summary of your workspace activities today.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button className="p-2.5 glass rounded-xl text-slate-400 hover:text-white transition-all relative">
+                <Bell size={20} />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-[#0a0f1d]"></span>
+              </button>
+              
+              <Link to="/profile/me" className="flex items-center gap-3 p-1.5 pr-4 glass rounded-2xl group transition-all hover:bg-white/10">
+                <Avatar
+                  src={authUser?.profilePicture}
+                  name={authUser?.fullName}
+                  size="sm"
+                  className="rounded-xl border border-white/10"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Profile</span>
+                  <span className="text-[10px] text-slate-500">Settings</span>
+                </div>
+              </Link>
+            </div>
           </div>
 
-          <Link to="/profile/me" className="block relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full opacity-75 group-hover:opacity-100 transition duration-200 blur-[2px]"></div>
-            <Avatar
-              src={authUser?.profilePicture}
-              name={authUser?.fullName}
-              size="md"
-              className="relative border-2 border-white/20"
-            />
-          </Link>
-        </div>
-
-        {/* Stats Overview */}
-        <div id="stats-overview" className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <StatsOverview stats={stats} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Recent Activity - Takes up 2 columns on large screens */}
-          <div className="lg:col-span-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <RecentActivity activities={activities} />
+          {/* Stats Overview */}
+          <div id="stats-overview" className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <StatsOverview stats={stats} />
           </div>
 
-          {/* Quick Actions - Takes up 1 column */}
-          <div id="quick-actions" className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <QuickActions />
-          </div>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+            {/* Recent Activity */}
+            <div className="lg:col-span-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  Recent Activity
+                  <span className="text-[10px] font-bold bg-white/5 text-slate-400 px-2 py-0.5 rounded">LIVE</span>
+                </h3>
+                <button className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">View All</button>
+              </div>
+              <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <RecentActivity activities={activities} />
+              </div>
+            </div>
 
-        {/* Recommended Notes */}
-        <div id="recommended-notes" className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            {/* Quick Actions */}
+            <div className="lg:col-span-4 space-y-6">
+              <h3 className="text-xl font-bold text-white">Quick Actions</h3>
+              <div id="quick-actions" className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                <QuickActions />
+              </div>
+            </div>
+          </div>
+
+          {/* Recommended Notes */}
+          <div className="space-y-6 mb-10">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Recommended for You</h3>
+              <Link to="/listings" className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">Explore Marketplace</Link>
+            </div>
+            <div id="recommended-notes" className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <RecommendedNotes />
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Dashboard;
+y: '0.4s' }}>
           <RecommendedNotes />
         </div>
       </main>

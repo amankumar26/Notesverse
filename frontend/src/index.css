@@ -1,20 +1,71 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  
+  --color-brand-50: #f0f7ff;
+  --color-brand-100: #e0efff;
+  --color-brand-200: #bae0ff;
+  --color-brand-300: #7cc7ff;
+  --color-brand-400: #33a9ff;
+  --color-brand-500: #0088ff;
+  --color-brand-600: #0066cc;
+  --color-brand-700: #004d99;
+  --color-brand-800: #003366;
+  --color-brand-900: #001a33;
+}
+
+:root {
+  --bg-main: #0a0f1d;
+  --bg-card: #141b2d;
+  --bg-sidebar: #0d1221;
+  --accent-primary: #3b82f6;
+  --accent-secondary: #8b5cf6;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-light: rgba(255, 255, 255, 0.08);
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--bg-main)] text-[var(--text-primary)] font-sans antialiased;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold tracking-tight;
+  }
+}
+
 @layer utilities {
   .glass {
-    @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-lg;
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
   }
 
   .glass-dark {
-    @apply bg-[#111827]/60 backdrop-blur-xl border border-white/10 shadow-xl;
+    @apply bg-slate-900/40 backdrop-blur-2xl border border-white/5 shadow-2xl;
   }
 
   .glass-panel {
-    @apply bg-[#1F2937]/70 backdrop-blur-lg border border-gray-700/50;
+    @apply bg-[#141b2d]/80 backdrop-blur-lg border border-white/10 shadow-lg transition-all duration-300;
+  }
+
+  .glass-card {
+    @apply bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300;
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-violet-500;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
   }
 
   .scrollbar-hide::-webkit-scrollbar {
@@ -27,50 +78,10 @@
   }
 }
 
-body {
-  @apply bg-[#0f172a] text-white;
-  background-image:
-    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
-  background-attachment: fixed;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.5s ease-out forwards;
-}
-
-/* Scrollbar */
+/* Scrollbar Style */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -78,89 +89,75 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-600/50 rounded-full hover:bg-gray-500/50 transition-colors;
+  @apply bg-slate-700/50 rounded-full hover:bg-slate-600/70 transition-colors;
 }
 
-/* Driver.js Glassmorphism Theme */
-/* Driver.js Glassmorphism Theme */
+/* Animations Overhaul */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Driver.js Professional Theme */
 .driver-popover {
-  background-color: rgba(30, 41, 59, 0.9) !important;
-  backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: white !important;
-  border-radius: 1rem !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-  padding: 1.5rem !important;
+  @apply glass-dark rounded-2xl p-6 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .driver-popover .driver-popover-title {
-  font-size: 1.25rem !important;
-  font-weight: 700 !important;
+  @apply font-display text-xl font-bold mb-2 !important;
   background: linear-gradient(to right, #60a5fa, #a855f7) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   color: transparent !important;
-  margin-bottom: 0.5rem !important;
 }
 
 .driver-popover .driver-popover-description {
-  color: #d1d5db !important;
-  font-size: 0.875rem !important;
-  line-height: 1.625 !important;
+  @apply text-slate-300 text-sm leading-relaxed !important;
 }
 
-.driver-popover button {
-  border-radius: 0.5rem !important;
-  font-weight: 500 !important;
-  transition: all 0.2s !important;
+.driver-popover .driver-popover-footer {
+  @apply mt-6 flex gap-2 justify-end !important;
+}
+
+.driver-popover .driver-popover-btn {
+  @apply px-4 py-2 rounded-lg text-sm font-semibold transition-all !important;
   text-shadow: none !important;
 }
 
 .driver-popover .driver-popover-next-btn {
-  background: linear-gradient(to right, #2563eb, #9333ea) !important;
-  color: white !important;
-  border: none !important;
-  padding: 0.5rem 1rem !important;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
-}
-
-.driver-popover .driver-popover-next-btn:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3) !important;
+  @apply bg-blue-600 hover:bg-blue-500 text-white border-none shadow-lg shadow-blue-900/20 !important;
 }
 
 .driver-popover .driver-popover-prev-btn {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #d1d5db !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  @apply bg-white/5 hover:bg-white/10 text-white border border-white/10 !important;
 }
 
-.driver-popover .driver-popover-prev-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: white !important;
+/* Transitions */
+.page-transition {
+  @apply animate-fade-in;
 }
 
-.driver-popover .driver-popover-close-btn {
-  color: #9ca3af !important;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.driver-popover .driver-popover-close-btn:hover {
-  color: white !important;
-}
-
-/* Arrows */
-.driver-popover-arrow-side-left.driver-popover-arrow {
-  border-left-color: rgba(30, 41, 59, 0.9) !important;
-}
-
-.driver-popover-arrow-side-right.driver-popover-arrow {
-  border-right-color: rgba(30, 41, 59, 0.9) !important;
-}
-
-.driver-popover-arrow-side-top.driver-popover-arrow {
-  border-top-color: rgba(30, 41, 59, 0.9) !important;
-}
-
-.driver-popover-arrow-side-bottom.driver-popover-arrow {
-  border-bottom-color: rgba(30, 41, 59, 0.9) !important;
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
