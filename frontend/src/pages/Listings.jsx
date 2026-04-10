@@ -59,6 +59,21 @@ const Listings = () => {
     },
   ];
 
+  const courseOptions = ["B.Tech", "B.Com", "B.Sc", "BBA", "BA", "MBA", "M.Tech"];
+
+  const generateCourseDummyNotes = () => {
+    return courseOptions.map((course, index) => ({
+      _id: `dummy-course-${index}`,
+      title: `${course} Comprehensive Study Bundle`,
+      seller: { fullName: "Notesverse Educator", _id: "admin", profilePicture: null },
+      price: 499.0,
+      subject: course,
+      thumbnailUrl: `https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=40&sig=${index}`,
+      currency: "INR",
+      isDummy: true
+    }));
+  };
+
   const fetchNotes = async (query = "", currentFilters = filters) => {
     try {
       setLoading(true);
@@ -86,16 +101,27 @@ const Listings = () => {
       }
 
       const validNotes = Array.isArray(data) ? data.filter(n => n.title && n.seller && n.seller.fullName) : [];
+      
+      // Always append course dummy notes after real ones
+      const courseDummies = generateCourseDummyNotes();
+      
+      // Filter dummies if a specific course is selected
+      const filteredDummies = currentFilters.course 
+        ? courseDummies.filter(d => d.subject === currentFilters.course)
+        : courseDummies;
 
       if (validNotes.length === 0 && !query && !Object.values(currentFilters).some(v => v)) {
-        setNotes(dummyNotes);
+        // If everything is empty, show general dummies + course dummies
+        setNotes([...dummyNotes, ...courseDummies]);
       } else {
-        setNotes(validNotes);
+        // Merge real notes with course dummies
+        setNotes([...validNotes, ...filteredDummies]);
       }
     } catch (err) {
       console.error("Fetch error:", err);
+      const courseDummies = generateCourseDummyNotes();
       if (!query && !Object.values(currentFilters).some(v => v)) {
-        setNotes(dummyNotes);
+        setNotes([...dummyNotes, ...courseDummies]);
       } else {
         setError(err.message);
       }
@@ -131,7 +157,7 @@ const Listings = () => {
     fetchNotes(searchTerm, defaultFilters);
   };
 
-  const courseOptions = ["B.Tech", "B.Com", "B.Sc", "BBA", "BA", "MBA", "M.Tech"];
+
   const categoryOptions = [
     { value: "notes", label: "Notes" },
     { value: "previous_year_paper", label: "Previous Papers" },
