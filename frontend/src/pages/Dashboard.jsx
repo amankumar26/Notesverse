@@ -201,12 +201,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-y: '0.4s' }}>
-          <RecommendedNotes />
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default Dashboard;
